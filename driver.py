@@ -295,7 +295,7 @@ def demo_algo_plots():
     dataMetr.close()
   
   #time correspondence -----------------
-  if (True):
+  if (False):
     dataMetr = netCDF4.Dataset(fMetr,'r')
     dataSeg = netCDF4.Dataset(fSeg,'r')
     dataMetrics = netCDF4.Dataset(fMetrics, 'r')
@@ -308,9 +308,13 @@ def demo_algo_plots():
     dataMetr.close()
   
   #time tracks -------------------------
-  if (True):
+  if (False):
     tracks.plot_tracks_metrics(fTrack, my_settings.fDirSave+'test_tracks.png')
-  
+
+  #density plot
+  if (True):
+    tracks.plot_density_map(fTrack, my_settings.fDirSave+'_density.png', 8) 
+    # final number above will determine min number of time steps required to keep for density.
   #time metrics ----------------------
 
 def debug_helper():

@@ -12,6 +12,8 @@ import datetime as dt
 
 import basinMetrics
 import correspond
+import helpers
+import my_settings
 
 r2d = 180./np.pi
 
@@ -471,3 +473,78 @@ def colorline(x, y, z=None, cmap=plt.get_cmap('Blues_r'), norm=plt.Normalize(0.0
     ax.add_collection(lc)
     
     return lc
+
+###################################################################################
+
+##################################################################
+# Density plotting fun by Dylan Lusk                             #
+# Created: 02/10/15                                              #
+##################################################################
+def plot_density_map(fTracks,fSave,mintimesteps):
+
+   file = open('density.npy', 'w+')
+
+   radius = 555000 #in meters
+
+   metricNames = ['thetaExtr', 'latExtr', 'lonExtr']
+   latInd = metricNames.index('latExtr')
+   lonInd = metricNames.index('lonExtr')
+   varKey = 'thetaExtr'
+   varInd = metricNames.index(varKey); varMin = 270.; varMax = 310.
+
+   trackList, timeList = read_tracks_metrics(fTracks, metricNames)
+
+   m = Basemap(projection='ortho',lon_0=0,lat_0=89.5, resolution='l')
+  
+   ax = plt.gca()
+   m.drawcoastlines()
+      
+##################################################################
+# Create new mesh for grids
+##################################################################
+
+   latboxsize = 2
+   lonboxsize = 5
+
+   xlat = range(30,90,latboxsize)
+   xlon = range(0,360+lonboxsize,lonboxsize)
+
+   xlati,xloni = np.meshgrid(xlat,xlon)
+   print len(xlati[1,:])
+   print len(xloni)
+
+##################################################################
+# Create the tracks
+##################################################################
+   den_arr = np.zeros([len(xlati),len(xloni[1:])])
+   for iTrack,track in enumerate(trackList):
+      nTimes = track.shape[0]
+      if (True):
+         if (nTimes<mintimesteps): 
+            continue
+    
+      vortlat = track[:,latInd]
+      vortlon = track[:,lonInd]
+
+      for ii in xrange(0,len(xlati)):
+         for jj in xrange(0,len(xlati[1,:])):
+            vortices = 0
+            for kk in xrange(0,len(vortlat)):
+               # If using NETCDF, subtract 360 from any value greater than 180 in order to
+               # use a longitude scale of -180-180 degrees (possibly not needed now due to radian conversion)
+               if (False):
+                  if vortlon[kk] > 180:
+                     vortlon[kk] = vortlon[kk] - 360
+         
+               distance = abs(my_settings.rEarth*helpers.distance_on_unit_sphere(vortlat[kk],vortlon[kk],xlati[ii,jj],xloni[ii,jj]))
+         
+               if distance <= radius:
+	          vortices = vortices + 1
+
+            den_arr[ii,jj] = den_arr[ii,jj] + vortices
+      print iTrack
+   np.save(file,den_arr)
+   m.contourf(xloni,xlati,den_arr)
+   plt.show()
+
+

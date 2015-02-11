@@ -12,43 +12,45 @@ areaOverlap = .1 #fraction of tpv area overlap for determining correspondence
 
 latThresh = 30.*np.pi/180. #segment N of this latitude
 trackMinMaxBoth = 0 #0-min, 1-max (2-both shouldn't be used w/o further development)
-info = '30N_eraI'
+info = '30N_eraI_1979'
 
-fDirData = '/data02/cases/summer2006/eraI/pv/'
-filesData = sorted(glob.glob(fDirData+'eraI_theta-u-v_2pvu_2006-06-01_09-30*'), key=os.path.getmtime)
+#Data location and names to pull
+fDirData = '/data01/Research/ERAInt/'
+filesData = sorted(glob.glob(fDirData+'ecmwf_*_1979.nc'), key=os.path.getmtime)
 print filesData
 fileMap = fDirData+'wrfout_mapProj.nc' #for inputType=wrf_trop
 
 #time information of input data
 deltaT = 6.*60.*60. #timestep between file times (s)
-timeStart = dt.datetime(2006,6,1,0) #time=timeStart+iTime*deltaT
+timeStart = dt.datetime(1979,1,1,0) #time=timeStart+iTime*deltaT
 timeDelta = dt.timedelta(seconds=deltaT)
 #select time intervals within filesData[iFile]...end[-1] means use all times
-iTimeStart_fData = [0]
-iTimeEnd_fData = [-1]
+nFiles = len(filesData)
+iTimeStart_fData = [0]*nFiles
+iTimeEnd_fData = [-1]*nFiles
 if (True): #a quick check of specified times
-  nFiles = len(filesData)
   if (len(iTimeStart_fData) != nFiles or len(iTimeEnd_fData) != nFiles):
     print "Uhoh, wrong iTime*_data settings in my_settings.py"
     import sys
     sys.exit()
 
-fDirSave = '/data01/tracks/summer06/jun1-sep30/'
+fDirSave = '/data01/Research/ERAInt/tracks/'
 #fDirSave = '/data01/tracks/wrf/algo/'
 if not os.path.exists(fDirSave):
     os.makedirs(fDirSave)
 
 fMesh = filesData[0]  
-fMetr = fDirSave+'fields_debug.nc'
-fSeg = fDirSave+'seg_debug.nc'
-fCorr = fDirSave+'correspond_test_horizByVert.nc'
-fTrack = fDirSave+'tracks_test_horizByVert.nc'
-fMetrics = fDirSave+'metrics_debug.nc'
+fMetr = fDirSave+info+'fields_debug.nc'
+fSeg = fDirSave+info+'seg_debug.nc'
+fCorr = fDirSave+info+'correspond_test_horizByVert.nc'
+fTrack = fDirSave+info+'tracks_test_horizByVert.nc'
+fMetrics = fDirSave+info+'metrics_debug.nc'
 
+#possible input types: eraI, wrf_trop
 inputType = 'eraI'
-doPreProc = False
-doSeg = False
-doMetrics = False
+doPreProc = True
+doSeg = True
+doMetrics = True
 doCorr = True
 doTracks = True
 
