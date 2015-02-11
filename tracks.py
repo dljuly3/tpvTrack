@@ -506,17 +506,15 @@ def plot_density_map(fTracks,fSave,mintimesteps):
    latboxsize = 2
    lonboxsize = 5
 
-   xlat = range(30,90,latboxsize)
-   xlon = range(0,360+lonboxsize,lonboxsize)
+   xlat = np.arange(30,90,latboxsize)
+   xlon = np.arange(0,360,lonboxsize)
 
-   xlati,xloni = np.meshgrid(xlat,xlon)
-   print len(xlati[1,:])
-   print len(xloni)
+   xloni,xlati = np.meshgrid(xlon,xlat)
 
 ##################################################################
 # Create the tracks
 ##################################################################
-   den_arr = np.zeros([len(xlati),len(xloni[1:])])
+   den_arr = np.zeros([len(xlat),len(xlon)])
    for iTrack,track in enumerate(trackList):
       nTimes = track.shape[0]
       if (True):
@@ -526,8 +524,8 @@ def plot_density_map(fTracks,fSave,mintimesteps):
       vortlat = track[:,latInd]
       vortlon = track[:,lonInd]
 
-      for ii in xrange(0,len(xlati)):
-         for jj in xrange(0,len(xlati[1,:])):
+      for ii in xrange(0,len(xlat)):
+         for jj in xrange(0,len(xlon)):
             vortices = 0
             for kk in xrange(0,len(vortlat)):
                # If using NETCDF, subtract 360 from any value greater than 180 in order to
@@ -536,7 +534,7 @@ def plot_density_map(fTracks,fSave,mintimesteps):
                   if vortlon[kk] > 180:
                      vortlon[kk] = vortlon[kk] - 360
          
-               distance = abs(my_settings.rEarth*helpers.distance_on_unit_sphere(vortlat[kk],vortlon[kk],xlati[ii,jj],xloni[ii,jj]))
+               distance = abs(my_settings.rEarth*helpers.distance_on_unit_sphere(vortlat[kk],vortlon[kk],xlat[ii],xlon[jj]))
          
                if distance <= radius:
 	          vortices = vortices + 1
@@ -544,7 +542,8 @@ def plot_density_map(fTracks,fSave,mintimesteps):
             den_arr[ii,jj] = den_arr[ii,jj] + vortices
       print iTrack
    np.save(file,den_arr)
-   m.contourf(xloni,xlati,den_arr)
+   m.contourf(xloni,xlati,den_arr,latlon=True)
+   m.colorbar()
    plt.show()
 
 
