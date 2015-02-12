@@ -544,6 +544,5 @@ def plot_density_map(fTracks,fSave,mintimesteps):
    np.save(file,den_arr)
    m.contourf(xloni,xlati,den_arr,latlon=True)
    m.colorbar()
-   plt.show()
-
+   plt.savefig(fSave); plt.close()
 
