@@ -480,9 +480,9 @@ def colorline(x, y, z=None, cmap=plt.get_cmap('Blues_r'), norm=plt.Normalize(0.0
 # Density plotting fun by Dylan Lusk                             #
 # Created: 02/10/15                                              #
 ##################################################################
-def plot_density_map(fTracks,fSave,mintimesteps):
+def plot_density_map(fTracks,fSave,aSave,mintimesteps):
 
-   file = open('density.npy', 'w+')
+   file = open(aSave, 'w+')
 
    radius = 555000 #in meters
 
