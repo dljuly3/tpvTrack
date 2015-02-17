@@ -6,13 +6,15 @@ import os, errno
 import numpy as np
 import datetime as dt
 
+#User settings
 rEarth = 6370.e3 #radius of spherical Earth (m)
 dFilter = 300.e3 #radius for whether local extremum is regional extremum
 areaOverlap = .1 #fraction of tpv area overlap for determining correspondence
 
-latThresh = 30.*np.pi/180. #segment N of this latitude
+latThresh = 30.*np.pi/180. #segment N of this latitude (in radians)
 trackMinMaxBoth = 0 #0-min, 1-max (2-both shouldn't be used w/o further development)
 info = '30N_eraI_1979'
+mintimesteps = 8; #minimum number of timesteps to use in tracking
 
 #Data location and names to pull
 fDirData = '/data01/Research/ERAInt/'

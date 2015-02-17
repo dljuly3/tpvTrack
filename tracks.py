@@ -486,11 +486,9 @@ def plot_density_map(fTracks,fSave,aSave,mintimesteps):
 
    radius = 555000 #in meters
 
-   metricNames = ['thetaExtr', 'latExtr', 'lonExtr']
+   metricNames = ['latExtr', 'lonExtr']
    latInd = metricNames.index('latExtr')
    lonInd = metricNames.index('lonExtr')
-   varKey = 'thetaExtr'
-   varInd = metricNames.index(varKey); varMin = 270.; varMax = 310.
 
    trackList, timeList = read_tracks_metrics(fTracks, metricNames)
 

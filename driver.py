@@ -313,7 +313,7 @@ def demo_algo_plots():
 
   #density plot
   if (True):
-    tracks.plot_density_map(fTrack, my_settings.fDirSave+'_density.png', my_settings.fDirSave+'_density_array.npy', 8) 
+    tracks.plot_density_map(fTrack, my_settings.fDirSave+'_density.png', my_settings.fDirSave+'_density_array.npy', my_settings.mintimesteps) 
     # final number above will determine min number of time steps required to keep for density.
   #time metrics ----------------------
 
