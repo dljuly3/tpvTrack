@@ -164,7 +164,7 @@ def write_tracks_metrics_netcdf_header(fName, info, nTimesInTrackMax, nTimes):
   
   # dimensions
   data.createDimension('nTracks', None)
-  data.createDimension('nTimesTrack', nTimesInTrackMax+1)
+  data.createDimension('nTimesTrack', None)
   data.createDimension('nTimes', nTimes)
   
   tNow = dt.datetime.now().strftime(timeStringFormat)
@@ -287,6 +287,19 @@ def read_tracks_metrics(fNameTracks, metricNames):
         
   data.close()
   return trackList, timeStartList
+
+def get_iTimeStart(fNameTracks, metricNames):
+
+  nMetrics = len(metricNames)
+  data = netCDF4.Dataset(fNameTracks,'r')
+  nTracks = len(data.dimensions['nTracks'])
+  iTimeStart = []
+  
+  for iTrack in xrange(nTracks):
+    iTimeStart.append(data.variables['iTimeStart'][iTrack])
+        
+  data.close()
+  return iTimeStart
   
 def plot_tracks_cells(fTracks, mesh, fDirSave):
   f = open(fTracks,'r')
@@ -513,11 +526,32 @@ def plot_density_map(fTracks,fSave,aSave,mintimesteps):
 # Create the tracks
 ##################################################################
    den_arr = np.zeros([len(xlat),len(xlon)])
+
+############For AO filtering######################################
+   if(False):
+      dyear,dmonth,dday,daoindex = np.loadtxt('/home/dylanl/Documents/Python/ecmwf/norm.daily.ao.index.b500101.current.ascii', unpack = 'true')
+      daolist = daoindex.tolist()
+      daolist6hour = []
+      [daolist6hour.extend([i]*4) for i in daolist]
+      iTimeStart = get_iTimeStart(fTracks, metricNames)
+      print iTimeStart
+##################################################################
+
    for iTrack,track in enumerate(trackList):
       nTimes = track.shape[0]
+
+      #Filter by min timesteps
       if (True):
          if (nTimes<mintimesteps): 
             continue
+
+#######Filter by AO##############################################
+      if (False):
+         index = iTimeStart[iTrack]
+         if(daolist6hour[int(index)] < 1):
+            continue
+
+#################################################################
     
       vortlat = track[:,latInd]
       vortlon = track[:,lonInd]

@@ -13,12 +13,21 @@ areaOverlap = .1 #fraction of tpv area overlap for determining correspondence
 
 latThresh = 30.*np.pi/180. #segment N of this latitude (in radians)
 trackMinMaxBoth = 0 #0-min, 1-max (2-both shouldn't be used w/o further development)
-info = '30N_eraI_1979'
+info = '30N_eraI_1979-2010'
 mintimesteps = 8; #minimum number of timesteps to use in tracking
 
 #Data location and names to pull
 fDirData = '/data01/Research/ERAInt/'
-filesData = sorted(glob.glob(fDirData+'ecmwf_*_1979.nc'), key=os.path.getmtime)
+#filesData = sorted(glob.glob(fDirData+'ecmwf_*.nc'), key=os.path.getmtime)
+dates = range(1979,2011)
+months = ['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec']
+filesData = []
+for x in xrange(len(dates)):
+    for y in xrange(len(months)):
+        fname = fDirData + 'ecmwf_' + months[y] + '_' + str(dates[x]) + '.nc'
+        if os.path.isfile(fname) is True:
+            filesData.append(fname)
+            
 print filesData
 fileMap = fDirData+'wrfout_mapProj.nc' #for inputType=wrf_trop
 
@@ -42,18 +51,18 @@ if not os.path.exists(fDirSave):
     os.makedirs(fDirSave)
 
 fMesh = filesData[0]  
-fMetr = fDirSave+info+'fields_debug.nc'
-fSeg = fDirSave+info+'seg_debug.nc'
-fCorr = fDirSave+info+'correspond_test_horizByVert.nc'
-fTrack = fDirSave+info+'tracks_test_horizByVert.nc'
-fMetrics = fDirSave+info+'metrics_debug.nc'
+fMetr = fDirSave+info+'fields.nc'
+fSeg = fDirSave+info+'seg.nc'
+fCorr = fDirSave+info+'correspond.nc'
+fTrack = fDirSave+info+'tracks.nc'
+fMetrics = fDirSave+info+'metrics.nc'
 
 #possible input types: eraI, wrf_trop
 inputType = 'eraI'
-doPreProc = True
-doSeg = True
-doMetrics = True
-doCorr = True
+doPreProc = False
+doSeg = False
+doMetrics = False
+doCorr = False
 doTracks = True
 
 def silentremove(filename):
