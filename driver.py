@@ -121,8 +121,6 @@ def demo():
       
     #since appending to fTrack over time, wipe file before starting (if it exists)
     my_settings.silentremove(fTrack)
-    #iTimeStart = 31*4; iTimeEnd = 31*4+8; timeStartGlobal = dt.datetime(2006,7,1,0)
-    #tracks.run_tracks_timeInterval(fTrack, fCorr, iTimeStart, iTimeEnd, timeStartGlobal, deltaTGlobal, fMetrics=fMetrics, trackOnlyMajor=True)
     tracks.run_tracks_timeInterval(fTrack, fCorr, 0, nTimes-1, timeStartGlobal, deltaTGlobal, fMetrics=fMetrics, trackOnlyMajor=True)
     if (False):
       tracks.plot_tracks_metrics(fTrack, my_settings.fDirSave+'test_tracks.png')
@@ -311,7 +309,7 @@ def demo_algo_plots():
   if (False):
     tracks.plot_tracks_metrics(fTrack, my_settings.fDirSave+'test_tracks.png')
 
-  #density plot
+  #density plot-------------------------
   if (True):
     tracks.plot_density_map(fTrack, my_settings.fDirSave+'30N_eraI_1979-2010_2day_density.png', my_settings.fDirSave+'30N_eraI_1979-2010_2day_density_array.npy', my_settings.mintimesteps) 
     # final number above will determine min number of time steps required to keep for density.
@@ -349,10 +347,10 @@ def debug_helper():
   print mesh.isIndsInRegion(cells)
 
 if __name__=='__main__':
-  #demo()
+  demo()
   #demo_testMods()
   #debug_helper()
-  demo_algo_plots()
+  #demo_algo_plots()
   #tracks.plot_tracks_metrics(my_settings.fTrack, my_settings.fDirSave+'test_tracks.png')
   #tracks.demo_plotMetrics('/data02/cases/test_segment/testUnified/summer2006/tracks_debug.txt')
   #tracks.demo_plotLifetimes('/data02/cases/test_segment/testUnified/summer2006/tracks_debug.txt')

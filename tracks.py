@@ -164,7 +164,8 @@ def write_tracks_metrics_netcdf_header(fName, info, nTimesInTrackMax, nTimes):
   
   # dimensions
   data.createDimension('nTracks', None)
-  data.createDimension('nTimesTrack', None)
+  #data.createDimension('nTimesTrack', nTimesInTrackMax+1)
+  data.createDimension('nTimesTrack', None) #unlimited dimension
   data.createDimension('nTimes', nTimes)
   
   tNow = dt.datetime.now().strftime(timeStringFormat)
@@ -343,7 +344,7 @@ def plot_tracks_metrics(fTracks, fSave):
   latInd = metricNames.index('latExtr')
   lonInd = metricNames.index('lonExtr')
   varKey = 'thetaExtr'
-  varInd = metricNames.index(varKey); varMin = 270.; varMax = 310.
+  varInd = metricNames.index(varKey); varMin = 270.; varMax = 310.; #varMin= 320.; varMax = 380.;
 
   trackList, timeList = read_tracks_metrics(fTracks, metricNames)
   
@@ -499,6 +500,15 @@ def plot_density_map(fTracks,fSave,aSave,mintimesteps):
 
    radius = 555000 #in meters
 
+######Filter options##############################################
+   genesis = True #filter for genesis
+   lysis = False #filter for lysis
+   fulldata = False #full data set
+   
+   AO = False #filter by AO (this setting is separate from above) 
+
+##################################################################
+
    metricNames = ['latExtr', 'lonExtr']
    latInd = metricNames.index('latExtr')
    lonInd = metricNames.index('lonExtr')
@@ -528,7 +538,7 @@ def plot_density_map(fTracks,fSave,aSave,mintimesteps):
    den_arr = np.zeros([len(xlat),len(xlon)])
 
 ############For AO filtering######################################
-   if(False):
+   if(AO == True):
       dyear,dmonth,dday,daoindex = np.loadtxt('/home/dylanl/Documents/Python/ecmwf/norm.daily.ao.index.b500101.current.ascii', unpack = 'true')
       daolist = daoindex.tolist()
       daolist6hour = []
@@ -546,15 +556,27 @@ def plot_density_map(fTracks,fSave,aSave,mintimesteps):
             continue
 
 #######Filter by AO##############################################
-      if (False):
+      if (AO == True):
          index = iTimeStart[iTrack]
          if(daolist6hour[int(index)] < 1):
             continue
-
 #################################################################
-    
-      vortlat = track[:,latInd]
-      vortlon = track[:,lonInd]
+
+#######Filter for genesis########################################
+      if (genesis == True):
+         vortlat = track[0,latInd]
+         vortlon = track[0,lonInd]
+#################################################################
+
+######Filter for lysis###########################################
+      if (lysis == True):
+         vortlat = track[-1,latInd]
+         vortlon = track[-1,lonInd]
+
+######No lysis or genesis filter#################################
+      if (fulldata == True):
+         vortlat = track[:,latInd]
+         vortlon = track[:,lonInd]
 
       for ii in xrange(0,len(xlat)):
          for jj in xrange(0,len(xlon)):
