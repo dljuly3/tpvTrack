@@ -164,7 +164,6 @@ def write_tracks_metrics_iTime_netcdf(data, iTime0, iTrackGlobal0, trackList, da
   nTracks = len(trackList)
   if (nTracks==0):
     return iTrackGlobal0
-
   trackLengths = np.array([len(track) for track in trackList], dtype=int)
   maxLength = np.max(trackLengths)
   #print "Maximum track length={0} at time {1}".format(maxLength, iTrackGlobal)
