@@ -16,19 +16,36 @@ trackMinMaxBoth = 0 #0-min, 1-max (2-both shouldn't be used w/o further developm
 info = '30N_eraI_1979-2010'
 mintimesteps = 8; #minimum number of timesteps to use in tracking
 
-#Data location and names to pull
-fDirData = '/data01/Research/ERAInt/'
-#filesData = sorted(glob.glob(fDirData+'ecmwf_*.nc'), key=os.path.getmtime)
-dates = range(1979,2011)
-months = ['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec']
-filesData = []
-for x in xrange(len(dates)):
-    for y in xrange(len(months)):
-        fname = fDirData + 'ecmwf_' + months[y] + '_' + str(dates[x]) + '.nc'
-        if os.path.isfile(fname) is True:
-            filesData.append(fname)
+#Possible input types: 'eraI' and 'wrf_trop' thus far
+inputType = 'eraI'
+
+#######################################################################################
+# USE THIS FOR ERA-INT FILES
+#######################################################################################
+if (inputType == 'eraI'):
+    #Data location and names to pull
+    fDirData = '/data01/Research/ERAInt/'
+    #filesData = sorted(glob.glob(fDirData+'ecmwf_*.nc'), key=os.path.getmtime)
+    dates = range(1979,2011)
+    months = ['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec']
+    filesData = []
+    for x in xrange(len(dates)):
+        for y in xrange(len(months)):
+            fname = fDirData + 'ecmwf_' + months[y] + '_' + str(dates[x]) + '.nc'
+            if os.path.isfile(fname) is True:
+                filesData.append(fname)
             
-print filesData
+    print filesData
+#######################################################################################
+# USE THIS FOR WRF FILES
+#######################################################################################
+if (inputType == 'wrf_trop'):
+    #Data location and names to pull
+    fDirData = '/data01/Research/track_files/20c/nick_tracks/'
+    filesData = [fDirData + 'wrf_tracks_75-76.nc']
+            
+    print filesData
+
 fileMap = fDirData+'wrfout_mapProj.nc' #for inputType=wrf_trop
 
 #time information of input data
@@ -45,8 +62,7 @@ if (True): #a quick check of specified times
     import sys
     sys.exit()
 
-fDirSave = '/data01/Research/ERAInt/tracks/'
-#fDirSave = '/data01/tracks/wrf/algo/'
+fDirSave = '/data01/Research/ERAInt/tracks/PNA/'
 if not os.path.exists(fDirSave):
     os.makedirs(fDirSave)
 
@@ -54,11 +70,10 @@ fMesh = filesData[0]
 fMetr = fDirSave+info+'fields.nc'
 fSeg = fDirSave+info+'seg.nc'
 fCorr = fDirSave+info+'correspond.nc'
-fTrack = fDirSave+info+'tracks.nc'
+fTrack = fDirData+'tracks/full_tracks/'+info+'tracks.nc'
 fMetrics = fDirSave+info+'metrics.nc'
 
 #possible input types: eraI, wrf_trop
-inputType = 'eraI'
 doPreProc = False
 doSeg = False
 doMetrics = False

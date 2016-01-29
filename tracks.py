@@ -505,7 +505,9 @@ def plot_density_map(fTracks,fSave,aSave,mintimesteps):
    lysis = False #filter for lysis
    fulldata = False #full data set
    
-   AO = False #filter by AO (this setting is separate from above) 
+   AO = False #filter by AO (this setting is separate from above)
+   NAO = False #filter by NAO (this setting is separate from above)
+   PNA = True #filter by PNA (this setting is separate from above)
 
 ##################################################################
 
@@ -528,16 +530,16 @@ def plot_density_map(fTracks,fSave,aSave,mintimesteps):
    lonboxsize = 5
 
    xlat = np.arange(30,90,latboxsize)
-   xlon = np.arange(0,360,lonboxsize)
+   xlon = np.arange(0,365,lonboxsize)
 
    xloni,xlati = np.meshgrid(xlon,xlat)
 
 ##################################################################
 # Create the tracks
-##################################################################
+#################################################################
    den_arr = np.zeros([len(xlat),len(xlon)])
 
-############For AO filtering######################################
+############For AO filtering#####################################
    if(AO == True):
       dyear,dmonth,dday,daoindex = np.loadtxt('/home/dylanl/Documents/Python/ecmwf/norm.daily.ao.index.b500101.current.ascii', unpack = 'true')
       daolist = daoindex.tolist()
@@ -545,8 +547,27 @@ def plot_density_map(fTracks,fSave,aSave,mintimesteps):
       [daolist6hour.extend([i]*4) for i in daolist]
       iTimeStart = get_iTimeStart(fTracks, metricNames)
       print iTimeStart
-##################################################################
+#################################################################
 
+############For NAO filtering####################################
+   if(NAO == True):
+      dyear,dmonth,dday,dnaoindex = np.loadtxt('/home/dylanl/Documents/Python/ecmwf/norm.daily.nao.index.b500101.current.ascii', unpack = 'true')
+      dnaolist = dnaoindex.tolist()
+      dnaolist6hour = []
+      [dnaolist6hour.extend([i]*4) for i in dnaolist]
+      iTimeStart = get_iTimeStart(fTracks, metricNames)
+      print iTimeStart
+#################################################################
+
+###########For PNA filtering#####################################
+   if(PNA == True):
+      dyear,dmonth,dday,dpnaindex = np.loadtxt('/home/dylanl/Documents/Python/ecmwf/norm.daily.pna.index.b500101.current.ascii', unpack = 'true')
+      dpnalist = dpnaindex.tolist()
+      dpnalist6hour = []
+      [dpnalist6hour.extend([i]*4) for i in dpnalist]
+      iTimeStart = get_iTimeStart(fTracks, metricNames)
+      print iTimeStart
+#################################################################
    for iTrack,track in enumerate(trackList):
       nTimes = track.shape[0]
 
@@ -558,9 +579,22 @@ def plot_density_map(fTracks,fSave,aSave,mintimesteps):
 #######Filter by AO##############################################
       if (AO == True):
          index = iTimeStart[iTrack]
-         if(daolist6hour[int(index)] < 1):
+         #For positive AO use < 1, negative > -1
+         if(daolist6hour[int(index)] > -1):
             continue
 #################################################################
+
+#######Filter by NAO#############################################
+      if (NAO == True):
+         index = iTimeStart[iTrack]
+         if(dnaolist6hour[int(index)] > -1):
+            continue
+
+########Filter by PNA############################################
+      if (PNA == True):
+         index = iTimeStart[iTrack]
+         if(dpnalist6hour[int(index)] < 1):
+            continue
 
 #######Filter for genesis########################################
       if (genesis == True):
@@ -581,18 +615,22 @@ def plot_density_map(fTracks,fSave,aSave,mintimesteps):
       for ii in xrange(0,len(xlat)):
          for jj in xrange(0,len(xlon)):
             vortices = 0
-            for kk in xrange(0,len(vortlat)):
-               # If using NETCDF, subtract 360 from any value greater than 180 in order to
-               # use a longitude scale of -180-180 degrees (possibly not needed now due to radian conversion)
-               if (False):
-                  if vortlon[kk] > 180:
-                     vortlon[kk] = vortlon[kk] - 360
+            if (fulldata == True):
+               for kk in xrange(0,len(vortlat)):
+                  # If using NETCDF, subtract 360 from any value greater than 180 in order to
+                  # use a longitude scale of -180-180 degrees (possibly not needed now due to radian conversion)
+                  if (False):
+                     if vortlon[kk] > 180:
+                        vortlon[kk] = vortlon[kk] - 360
          
-               distance = abs(my_settings.rEarth*helpers.distance_on_unit_sphere(vortlat[kk],vortlon[kk],xlat[ii],xlon[jj]))
+                  distance = abs(my_settings.rEarth*helpers.distance_on_unit_sphere(vortlat[kk],vortlon[kk],xlat[ii],xlon[jj]))
          
+                  if distance <= radius:
+	             vortices = vortices + 1
+            else:
+               distance = abs(my_settings.rEarth*helpers.distance_on_unit_sphere(vortlat,vortlon,xlat[ii],xlon[jj]))
                if distance <= radius:
-	          vortices = vortices + 1
-
+                  vortices = vortices + 1
             den_arr[ii,jj] = den_arr[ii,jj] + vortices
       print iTrack
    np.save(file,den_arr)

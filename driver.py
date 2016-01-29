@@ -259,6 +259,11 @@ def demo_plotTracks():
   fTrack = my_settings.fTrack
   tracks.plot_tracks_metrics(fTrack, 'test_tracks.png')
 
+def demo_plotDensity():
+  fTrack = my_settings.fTrack
+  tracks.plot_density_map(fTrack, my_settings.fDirSave+'30N_eraI_1979-2010_2day_genesis_posPNAdensity.png', my_settings.fDirSave+'30N_eraI_1979-2010_2day_genesis_posPNAdensity_array.npy', my_settings.mintimesteps) 
+    # final number above will determine min number of time steps required to keep for density.
+
 def demo_algo_plots():
   #setup -----------------
   info = my_settings.info
@@ -311,7 +316,7 @@ def demo_algo_plots():
 
   #density plot-------------------------
   if (True):
-    tracks.plot_density_map(fTrack, my_settings.fDirSave+'30N_eraI_1979-2010_2day_density.png', my_settings.fDirSave+'30N_eraI_1979-2010_2day_density_array.npy', my_settings.mintimesteps) 
+    tracks.plot_density_map(fTrack, my_settings.fDirSave+'wrf_75-76_density.png', my_settings.fDirSave+'wrf_75-76_density_array.npy', my_settings.mintimesteps) 
     # final number above will determine min number of time steps required to keep for density.
   #time metrics ----------------------
 
@@ -347,10 +352,11 @@ def debug_helper():
   print mesh.isIndsInRegion(cells)
 
 if __name__=='__main__':
-  demo()
+  #demo()
   #demo_testMods()
   #debug_helper()
   #demo_algo_plots()
+   demo_plotDensity()
   #tracks.plot_tracks_metrics(my_settings.fTrack, my_settings.fDirSave+'test_tracks.png')
   #tracks.demo_plotMetrics('/data02/cases/test_segment/testUnified/summer2006/tracks_debug.txt')
   #tracks.demo_plotLifetimes('/data02/cases/test_segment/testUnified/summer2006/tracks_debug.txt')
