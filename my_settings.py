@@ -5,8 +5,29 @@ import glob
 import os, errno
 import numpy as np
 import datetime as dt
+from mpi4py import MPI
 
+<<<<<<< HEAD
 #User settings
+=======
+commWorld = MPI.COMM_WORLD
+myRank = commWorld.Get_rank()
+nRanks = commWorld.size
+def getLimits_startStop(iStartGlobal, iEndGlobal, iWork=myRank, nWork=nRanks):
+  #assign contiguous chunks in a sequence to processors. just leave the leftovers to the last processor(s).
+  #when the length isn't divisible by the number of workers, this isn't the best solution but we can optimize for that later.
+  
+  szChunk = int(np.ceil( (iEndGlobal-iStartGlobal)/float(nWork) )) #interval must cover length s.t. # elements for all but last worker
+  if (szChunk<1):
+    print 'Check logic in getLimits_startStop for your strange case w/ more workers than elements'
+  
+  iStart = iStartGlobal+iWork*szChunk
+  iEnd = iStart+szChunk-1
+  iEnd = min(iEndGlobal,iEnd)
+  
+  return (iStart,iEnd)
+  
+>>>>>>> nick/parallel
 rEarth = 6370.e3 #radius of spherical Earth (m)
 dFilter = 300.e3 #radius for whether local extremum is regional extremum
 areaOverlap = .1 #fraction of tpv area overlap for determining correspondence
@@ -50,7 +71,12 @@ fileMap = fDirData+'wrfout_mapProj.nc' #for inputType=wrf_trop
 
 #time information of input data
 deltaT = 6.*60.*60. #timestep between file times (s)
+<<<<<<< HEAD
 timeStart = dt.datetime(1979,1,1,0) #time=timeStart+iTime*deltaT
+=======
+#timeStart = dt.datetime(2007,6,1,0) #time=timeStart+iTime*deltaT
+timeStart = dt.datetime(1979,1,1,0)
+>>>>>>> nick/parallel
 timeDelta = dt.timedelta(seconds=deltaT)
 #select time intervals within filesData[iFile]...end[-1] means use all times
 nFiles = len(filesData)
@@ -62,16 +88,36 @@ if (True): #a quick check of specified times
     import sys
     sys.exit()
 
+<<<<<<< HEAD
 fDirSave = '/data01/Research/ERAInt/tracks/PNA/'
+=======
+#fDirSave = '/data01/tracks/summer07/tpvTrack/'
+#fDirSave = '/data01/tracks/summer06/jun1-sep30/'
+#fDirSave = '/data01/tracks/wrf/algo/'
+#fDirSave = '/data01/tracks/parallel/test_algo/'
+fDirSave = '/data01/tracks/1979-2015/tracks/'
+>>>>>>> nick/parallel
 if not os.path.exists(fDirSave):
     os.makedirs(fDirSave)
 
 fMesh = filesData[0]  
+<<<<<<< HEAD
 fMetr = fDirSave+info+'fields.nc'
 fSeg = fDirSave+info+'seg.nc'
 fCorr = fDirSave+info+'correspond.nc'
 fTrack = fDirData+'tracks/full_tracks/'+info+'tracks.nc'
 fMetrics = fDirSave+info+'metrics.nc'
+=======
+fMetr = fDirSave+'fields.nc'
+fSegFmt = fDirSave+'seg_{0}.nc'
+fSeg = fSegFmt.format(myRank)
+fSegFinal = fDirSave+'seg.nc'; fSeg = fSegFinal #for after running seg in parallel...
+fCorr = fDirSave+'correspond_horizPlusVert.nc'
+fTrackFmt = fDirSave+'tracks_{0}.nc'
+fTrack = fTrackFmt.format(myRank)
+fTrackFinal = fDirSave+'tracks_low.nc'
+fMetrics = fDirSave+'metrics.nc'
+>>>>>>> nick/parallel
 
 #possible input types: eraI, wrf_trop
 doPreProc = False
