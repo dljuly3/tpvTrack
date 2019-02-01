@@ -15,6 +15,7 @@ printTiming = True
 from datetime import datetime
 
 def demo():
+  """ tpvTrack driver. Using my_settings user-input, runs pre-process, segment, metrics, correspondence, and tracks."""
   #setup -----------------
   info = my_settings.info
   filesData = my_settings.filesData
@@ -69,7 +70,8 @@ def demo():
     if (printTiming):
       tStart = datetime.now()
       
-    segment.run_segment(fSeg, info, dataMetr, cell0.copy(), mesh, nTimes)
+    #segment.run_segment(fSeg, info, dataMetr, cell0.copy(), mesh, nTimes)
+    segment.run_segment(fSeg, info, dataMetr, cell0.copy(), mesh, nTimes, segRestrictPerc=my_settings.segRestrictPerc)
     if (False):
       segment.run_plotBasins(my_settings.fDirSave, dataMetr, fSeg, mesh)
       
@@ -291,14 +293,14 @@ def demo_algo_plots():
     print "Unrecognized input type in my_settings: ",my_settings.inputType
   
   #segment --------------------------
-  if (False):
+  if (True):
     dataMetr = netCDF4.Dataset(fMetr,'r');
     segment.run_plotBasins(my_settings.fDirSave, dataMetr, fSeg, mesh)
     
     dataMetr.close()
   
   #time correspondence -----------------
-  if (False):
+  if (True):
     dataMetr = netCDF4.Dataset(fMetr,'r')
     dataSeg = netCDF4.Dataset(fSeg,'r')
     dataMetrics = netCDF4.Dataset(fMetrics, 'r')
@@ -320,37 +322,6 @@ def demo_algo_plots():
     # final number above will determine min number of time steps required to keep for density.
   #time metrics ----------------------
 
-def debug_helper():
-  #setup -----------------
-  info = my_settings.info
-  filesData = my_settings.filesData
-  fMesh = my_settings.fMesh  
-  fMetr = my_settings.fMetr
-  fSeg = my_settings.fSeg
-  fCorr = my_settings.fCorr
-  fTrack = my_settings.fTrack
-  fMetrics = my_settings.fMetrics
-  
-  rEarth = my_settings.rEarth
-  dRegion = my_settings.dFilter
-  latThresh = my_settings.latThresh
-  
-  #pre-process ------------------------
-  #if already processed input data
-  if (my_settings.inputType=='eraI'):
-    mesh, cell0 = preProcess.demo_eraI(fMesh, [], fMetr, my_settings.rEarth, dRegion, latThresh, my_settings.iTimeStart_fData, my_settings.iTimeEnd_fData)
-  elif (my_settings.inputType=='mpas'):
-    mesh, cell0 = preProcess.demo_mpas(fMesh, [], fMetr, my_settings.rEarth, dRegion, latThresh, my_settings.iTimeStart_fData, my_settings.iTimeEnd_fData)
-  elif (my_settings.inputType=='wrf_trop'):
-      mesh, cell0 = preProcess.demo_wrf_trop(fMesh, [], fMetr, rEarth, dRegion, latThresh, my_settings.iTimeStart_fData, my_settings.iTimeEnd_fData, None)
-  else:
-    print "Unrecognized input type in my_settings: ",my_settings.inputType
-    
-  cells = np.arange(1000,1010)
-  print mesh.get_latLon_inds(cells)
-  print mesh.get_area_inds(cells)
-  print mesh.isIndsInRegion(cells)
-
 if __name__=='__main__':
   #demo()
   #demo_testMods()
@@ -361,3 +332,4 @@ if __name__=='__main__':
   #tracks.demo_plotMetrics('/data02/cases/test_segment/testUnified/summer2006/tracks_debug.txt')
   #tracks.demo_plotLifetimes('/data02/cases/test_segment/testUnified/summer2006/tracks_debug.txt')
   #tracks.demo_compareMetrics('/data02/cases/test_segment/testUnified/200608/tracks_debug.txt')
+

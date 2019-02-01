@@ -9,10 +9,12 @@ import datetime as dt
 #User settings
 rEarth = 6370.e3 #radius of spherical Earth (m)
 dFilter = 300.e3 #radius for whether local extremum is regional extremum
-areaOverlap = .1 #fraction of tpv area overlap for determining correspondence
+areaOverlap = .01 #fraction of tpv area overlap for candidate correspondence
+segRestrictPerc = 10. #percentile of boundary amplitudes to restrict watershed basins [0,100]
 
 latThresh = 30.*np.pi/180. #segment N of this latitude (in radians)
 trackMinMaxBoth = 0 #0-min, 1-max (2-both shouldn't be used w/o further development)
+
 info = '30N_eraI_1979-2010'
 mintimesteps = 8; #minimum number of timesteps to use in tracking
 
@@ -62,7 +64,9 @@ if (True): #a quick check of specified times
     import sys
     sys.exit()
 
+
 fDirSave = '/data01/Research/ERAInt/tracks/PNA/'
+
 if not os.path.exists(fDirSave):
     os.makedirs(fDirSave)
 
@@ -79,6 +83,9 @@ doSeg = False
 doMetrics = False
 doCorr = False
 doTracks = True
+
+#for inputType=wrf_trop
+fileMap = fDirData+'wrfout_mapProj.nc'
 
 def silentremove(filename):
   #from http://stackoverflow.com/questions/10840533/most-pythonic-way-to-delete-a-file-which-may-not-exist

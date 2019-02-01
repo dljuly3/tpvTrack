@@ -18,7 +18,16 @@ import my_settings
 r2d = 180./np.pi
 
 def form_track_site(dataCorr, iTimeStart, iTimeEnd, site0, trackOnlyMajor):
-  # follow a given site throughout the correspondences "tree" and split tree into individual tracks
+  """
+  Follow a given site throughout the correspondences "tree" and split tree into individual tracks
+  
+  Arguments:
+  dataCorr - correspondence netCDF4 object
+  iTimeStart - time index to start track
+  iTimeEnd - last possible time in track
+  site0 - starting site
+  trackOnlyMajor - if True, track only major correspondences. if false, track major and minor correspondences.
+  """
   
   tracks_checkContinue = [[site0]]
   trackList = []
@@ -58,6 +67,16 @@ def form_track_site(dataCorr, iTimeStart, iTimeEnd, site0, trackOnlyMajor):
   return trackList
   
 def form_tracks_iTime(dataCorr, iTimeStart, iTimeEnd, sites0, trackOnlyMajor):
+  """
+  Form tracks that started at a given time
+  
+  Arguments:
+  dataCorr - correspondence netCDF4 object
+  iTimeStart - time index to start track
+  iTimeEnd - last possible time in track
+  sites0 - starting sites
+  trackOnlyMajor - if True, track only major correspondences. if false, track major and minor correspondences.
+  """
   trackList = []
   for site in sites0:
     #print "Forming tracks from correspondences for initial site {0} at time {1}".format(site, iTimeStart)
@@ -69,11 +88,22 @@ def form_tracks_iTime(dataCorr, iTimeStart, iTimeEnd, sites0, trackOnlyMajor):
   return trackList
   
 def run_tracks_timeInterval(fNameTracks, fCorr, iTimeStart, iTimeEnd, timeStartGlobal, deltaTGlobal, fMetrics='', trackOnlyMajor=False):
-  #find tracks for sites at [iTimeStart,iTimeEnd) out to iTimeEnd (at most).
-  #besides stitching the correspondences together, the tricky part is that we don't want to start a track
-  #for a basin at each timestep...only start a track at "genesis".
-  #define genesis as:
+  """
+  Find tracks for sites at [iTimeStart,iTimeEnd) out to iTimeEnd (at most).
+  Besides stitching the correspondences together, the tricky part is that we don't want to start a track for a basin at each timestep...only start a track at "genesis".
+  #Define genesis as:
   #-basin not part of an existing track at that time
+  
+  Arguments:
+  fNameTracks - output tracks file
+  fCorr - correspondence file output by tpvTrack
+  iTimeStart - global start time of tracks
+  iTimeEnd - global end time of tracks
+  timeStartGlobal - datetime.datetime of initial time
+  deltaTGlobal - datetime.timedelta of time spacing between input data
+  fMetrics - path to metrics netcdf file. If '', write different format track file
+  trackOnlyMajor - to track only major (True) or all correspondences (False)
+  """
   
   #store the basins that are part of tracks at each time
   nTimes = iTimeEnd-iTimeStart
@@ -122,6 +152,7 @@ def run_tracks_timeInterval(fNameTracks, fCorr, iTimeStart, iTimeEnd, timeStartG
   dataTracks.close()    
   
 def write_tracks_cells(fNameTracks, trackList):
+  """Writing text track output file of just site in track"""
   print "Appending to file: "+fNameTracks
   f = open(fNameTracks,'a')
   for track in trackList:
@@ -130,6 +161,7 @@ def write_tracks_cells(fNameTracks, trackList):
   f.close()
 
 def read_tracks_cells(fNameTracks):
+  """Reading text track output file of just site in track"""
   #return trackList
   f = open(fNameTracks,'r')
   trackList = []
@@ -142,6 +174,8 @@ def read_tracks_cells(fNameTracks):
 timeStringFormat = "%Y-%m-%d-%H"
 def write_tracks_metrics_netcdf_header(fName, info, nTimesInTrackMax, nTimes):
   '''
+  Make and write header of tracks tpvtrack netcdf output file.
+  
   For inputs,
   nTimesInTrackMax: maximum length of track
   nTimes: number of times in tracking interval
@@ -166,7 +200,8 @@ def write_tracks_metrics_netcdf_header(fName, info, nTimesInTrackMax, nTimes):
   data.createDimension('nTracks', None)
   #data.createDimension('nTimesTrack', nTimesInTrackMax+1)
   data.createDimension('nTimesTrack', None) #unlimited dimension
-  data.createDimension('nTimes', nTimes)
+  #data.createDimension('nTimes', nTimes)
+  data.createDimension('nTimes', nTimes+1) #[0:nTimesSeg-1 +1)
   
   tNow = dt.datetime.now().strftime(timeStringFormat)
   lenTime = len(tNow)
@@ -178,14 +213,20 @@ def write_tracks_metrics_netcdf_header(fName, info, nTimesInTrackMax, nTimes):
   data.createVariable('lenTrack', 'i4', ('nTracks',))
   data.createVariable('siteExtr', 'i4', ('nTracks','nTimesTrack',))
   
-  for key in basinMetrics.metricKeys:
-    data.createVariable(key, 'f8', ('nTracks','nTimesTrack',))
+  #for key in basinMetrics.metricKeys:
+  for iKey in xrange(len(basinMetrics.metricKeys)):
+    key = basinMetrics.metricKeys[iKey]; units=basinMetrics.metricUnits[iKey];info=basinMetrics.metricNames[iKey]
+    var_data = data.createVariable(key, 'f8', ('nTracks','nTimesTrack',))
+    var_data.units = units; var_data.long_name=info
   return data
 
 def write_tracks_metrics_iTime_netcdf(data, iTime0, iTrackGlobal0, trackList, dataMetrics, timeStartGlobal, deltaTGlobal):
-  
+  """Write all tracks that started at given time to tracks netcdf file"""
   tStart = timeStartGlobal+deltaTGlobal*iTime0; tStart = tStart.strftime(timeStringFormat)
   data.variables['timeStamp'][iTime0] = tStart
+  #quick fix to fill in timestamp for tracks ending at last possible time
+  tNext = timeStartGlobal+deltaTGlobal*(iTime0+1); tNext = tNext.strftime(timeStringFormat)
+  data.variables['timeStamp'][iTime0+1] = tNext
   
   nTracks = len(trackList)
   if (nTracks==0):
@@ -220,7 +261,9 @@ def write_tracks_metrics_iTime_netcdf(data, iTime0, iTrackGlobal0, trackList, da
   
 def write_tracks_metrics_iTime(fSave, iTime0, trackList, dataMetrics, timeStartGlobal, deltaTGlobal):
   '''
-  format is:
+  Write text file version of tracks file
+  
+  format of text file is:
   (header) metric1 metric2 ...
   iTimeStartTrack1 nTimesTrack1 timeStart timeEnd
   (time1) metric1 metric2 ... for track1
@@ -267,8 +310,10 @@ def write_tracks_metrics_iTime(fSave, iTime0, trackList, dataMetrics, timeStartG
   f.close()
 
 def read_tracks_metrics(fNameTracks, metricNames):
+  """
   #Input the name of the track file and list of metricNames strings.
   #return list of numpy arrays list[iTrack][iTime,iMetric] with the metric properties of the tracked TPVs.
+  """
   
   nMetrics = len(metricNames)
   data = netCDF4.Dataset(fNameTracks,'r')
@@ -305,6 +350,7 @@ def get_iTimeStart(fNameTracks, metricNames):
   return iTimeStart
   
 def plot_tracks_cells(fTracks, mesh, fDirSave):
+  """Example plot of tracks in text tracks without metrics file on map"""
   f = open(fTracks,'r')
   
   m = Basemap(projection='ortho',lon_0=0,lat_0=89.5, resolution='l')
@@ -341,7 +387,7 @@ def plot_tracks_cells(fTracks, mesh, fDirSave):
   f.close()
 
 def plot_tracks_metrics(fTracks, fSave):
-  
+  """Example plot of tracks in netcdf tracks file on map colored by metric"""
   metricNames = ['thetaExtr', 'latExtr', 'lonExtr']
   latInd = metricNames.index('latExtr')
   lonInd = metricNames.index('lonExtr')
@@ -359,7 +405,7 @@ def plot_tracks_metrics(fTracks, fSave):
   for iTrack,track in enumerate(trackList):
     nTimes = track.shape[0]
     if (True):
-      if (nTimes<56):
+      if (nTimes<8):
         continue
     
     lat = track[:,latInd]
@@ -377,7 +423,7 @@ def plot_tracks_metrics(fTracks, fSave):
     colorline(x, y, z=vals, cmap=plt.get_cmap('RdBu_r'), norm=plt.Normalize(varMin, varMax), linewidth=3, alpha=1.0, ax=ax)
   
   #plt.colorbar()
-  s = 'TPV {0}, [{1},{2}]'.format(varKey, varMin, varMax)
+  s = 'Tracks {0}, [{1},{2}]'.format(varKey, varMin, varMax)
   plt.title(s)
   if (False):
     plt.show()
@@ -386,7 +432,7 @@ def plot_tracks_metrics(fTracks, fSave):
     plt.savefig(fSave); plt.close()
     
 def demo_plotMetrics(fTracks):
-
+  """Example plot of track metrics"""
   metricNames = ['thetaExtr', 'latExtr']
   #latInd = metricNames.index('latExtr')
 
@@ -408,6 +454,7 @@ def demo_plotMetrics(fTracks):
     plt.show()
 
 def demo_compareMetrics(fTracks):
+  """Example joint-plot of 2 metrics"""
   metricNames = ['rEquiv', 'vortMean']
   #latInd = metricNames.index('latExtr')
 
@@ -430,7 +477,7 @@ def demo_compareMetrics(fTracks):
   plt.show()
 
 def demo_plotLifetimes(fTracks):
-
+  """Example histogram of track lifetimes"""
   metricNames = ['latExtr']
   trackList = read_tracks_metrics(fTracks, metricNames)
   
