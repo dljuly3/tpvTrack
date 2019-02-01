@@ -10,6 +10,7 @@ from mpl_toolkits.basemap import Basemap
 from matplotlib.collections import LineCollection
 from matplotlib.colors import ListedColormap, BoundaryNorm
 import datetime as dt
+import pandas as pd
 
 import basinMetrics
 import correspond
@@ -485,8 +486,18 @@ def plot_density_map(fTracks,fSave,aSave,mintimesteps):
    
    AO = False #filter by AO (this setting is separate from above)
    NAO = False #filter by NAO (this setting is separate from above)
-   PNA = True #filter by PNA (this setting is separate from above)
+   PNA = False #filter by PNA (this setting is separate from above)
 
+   Spring = False #filter by March, April, May
+   Summer = False #filter by June, July, August
+   Fall = False #filter by September, October, November
+   Winter = True #filter by December, January, February
+   
+   Monthly = False #filter by Month?
+
+   TPVdef = True #filter by definition of TPV
+   thresh = .6 #percentage threshold
+   latNorth = False #filter by genesis above defined latitude
 ##################################################################
 
    metricNames = ['latExtr', 'lonExtr']
@@ -504,18 +515,34 @@ def plot_density_map(fTracks,fSave,aSave,mintimesteps):
 # Create new mesh for grids
 ##################################################################
 
-   latboxsize = 2
-   lonboxsize = 5
+   latboxsize = 1 #traditionally use 2
+   lonboxsize = 3 #traditionally use 5
 
    xlat = np.arange(30,90,latboxsize)
    xlon = np.arange(0,365,lonboxsize)
 
    xloni,xlati = np.meshgrid(xlon,xlat)
 
-##################################################################
+#################################################################
 # Create the tracks
 #################################################################
    den_arr = np.zeros([len(xlat),len(xlon)])
+
+############For Monthly Filtering################################
+   if(Monthly == True):
+      seasonlistin = pd.read_pickle('/home/dylanl/Documents/Python/ecmwf/monthlist.pkl')
+      seasonlistin = seasonlistin.tolist()
+      seasonlist = []
+      [seasonlist.extend([i]*4) for i in seasonlistin]
+      iTimeStart = get_iTimeStart(fTracks, metricNames)
+
+############For Seasonal Filtering###############################
+   if(Spring == True or Summer == True or Fall == True or Winter == True):
+      seasonlistin = pd.read_pickle('/home/dylanl/Documents/Python/ecmwf/seasonlist.pkl')
+      seasonlistin = seasonlistin.tolist()
+      seasonlist = []
+      [seasonlist.extend([i]*4) for i in seasonlistin]
+      iTimeStart = get_iTimeStart(fTracks, metricNames)
 
 ############For AO filtering#####################################
    if(AO == True):
@@ -524,8 +551,6 @@ def plot_density_map(fTracks,fSave,aSave,mintimesteps):
       daolist6hour = []
       [daolist6hour.extend([i]*4) for i in daolist]
       iTimeStart = get_iTimeStart(fTracks, metricNames)
-      print iTimeStart
-#################################################################
 
 ############For NAO filtering####################################
    if(NAO == True):
@@ -534,7 +559,7 @@ def plot_density_map(fTracks,fSave,aSave,mintimesteps):
       dnaolist6hour = []
       [dnaolist6hour.extend([i]*4) for i in dnaolist]
       iTimeStart = get_iTimeStart(fTracks, metricNames)
-      print iTimeStart
+      
 #################################################################
 
 ###########For PNA filtering#####################################
@@ -544,7 +569,7 @@ def plot_density_map(fTracks,fSave,aSave,mintimesteps):
       dpnalist6hour = []
       [dpnalist6hour.extend([i]*4) for i in dpnalist]
       iTimeStart = get_iTimeStart(fTracks, metricNames)
-      print iTimeStart
+      
 #################################################################
    for iTrack,track in enumerate(trackList):
       nTimes = track.shape[0]
@@ -552,6 +577,43 @@ def plot_density_map(fTracks,fSave,aSave,mintimesteps):
       #Filter by min timesteps
       if (True):
          if (nTimes<mintimesteps): 
+            continue
+      #Filter by definition of TPV
+      if (TPVdef == True):
+         north_65_count = 0
+         for track_val in xrange(0,nTimes):
+            if track[track_val,latInd] >= 65:
+               north_65_count += 1
+            percent = float(north_65_count)/float(nTimes)
+         if percent < thresh:
+            continue
+      if (latNorth == True):
+         if track[0,latInd] < 65:
+            continue
+#######Filter by Month###########################################
+
+#######Filter by Spring##########################################
+      if (Spring == True):
+         index = iTimeStart[iTrack]
+         if(seasonlist[int(index)] != 1):
+            continue
+
+#######Filter by Summer##########################################
+      if (Summer == True):
+         index = iTimeStart[iTrack]
+         if(seasonlist[int(index)] != 2):
+            continue
+
+#######Filter by Fall############################################
+      if (Fall == True):
+         index = iTimeStart[iTrack]
+         if(seasonlist[int(index)] != 3):
+            continue
+
+#######Filter by Winter##########################################
+      if (Winter == True):
+         index = iTimeStart[iTrack]
+         if(seasonlist[int(index)] != 4):
             continue
 
 #######Filter by AO##############################################
@@ -604,7 +666,7 @@ def plot_density_map(fTracks,fSave,aSave,mintimesteps):
                   distance = abs(my_settings.rEarth*helpers.distance_on_unit_sphere(vortlat[kk],vortlon[kk],xlat[ii],xlon[jj]))
          
                   if distance <= radius:
-	             vortices = vortices + 1
+	                 vortices = vortices + 1
             else:
                distance = abs(my_settings.rEarth*helpers.distance_on_unit_sphere(vortlat,vortlon,xlat[ii],xlon[jj]))
                if distance <= radius:
@@ -615,7 +677,951 @@ def plot_density_map(fTracks,fSave,aSave,mintimesteps):
    m.contourf(xloni,xlati,den_arr,latlon=True)
    m.colorbar()
    plt.savefig(fSave); plt.close()
+   
+def plot_monthly_density_map(fTracks,mintimesteps):
 
+   radius = 555000 #in meters
+
+######Filter options##############################################
+   genesis = True #filter for genesis
+   lysis = False #filter for lysis
+   fulldata = False #full data set
+   
+   AO = False #filter by AO (this setting is separate from above)
+   NAO = False #filter by NAO (this setting is separate from above)
+   PNA = False #filter by PNA (this setting is separate from above)
+
+   TPVdef = True #filter by definition of TPV
+   latNorth = False #filter by genesis above defined latitude
+##################################################################
+
+   metricNames = ['latExtr', 'lonExtr']
+   latInd = metricNames.index('latExtr')
+   lonInd = metricNames.index('lonExtr')
+
+      
+   trackList, timeList = read_tracks_metrics(fTracks, metricNames)
+##################################################################
+# Create new mesh for grids
+##################################################################
+
+   latboxsize = 2
+   lonboxsize = 5
+
+   xlat = np.arange(30,90,latboxsize)
+   xlon = np.arange(0,365,lonboxsize)
+
+   xloni,xlati = np.meshgrid(xlon,xlat)
+
+#################################################################
+# Create the tracks
+#################################################################
+
+############For Monthly Filtering################################
+   seasonlistin = pd.read_pickle('/home/dylanl/Documents/Python/ecmwf/monthlist.pkl')
+   seasonlistin = seasonlistin.tolist()
+   seasonlist = []
+   [seasonlist.extend([i]*4) for i in seasonlistin]
+   iTimeStart = get_iTimeStart(fTracks, metricNames)
+
+############For AO filtering#####################################
+   if(AO == True):
+      dyear,dmonth,dday,daoindex = np.loadtxt('/home/dylanl/Documents/Python/ecmwf/norm.daily.ao.index.b500101.current.ascii', unpack = 'true')
+      daolist = daoindex.tolist()
+      daolist6hour = []
+      [daolist6hour.extend([i]*4) for i in daolist]
+      iTimeStart = get_iTimeStart(fTracks, metricNames)
+
+############For NAO filtering####################################
+   if(NAO == True):
+      dyear,dmonth,dday,dnaoindex = np.loadtxt('/home/dylanl/Documents/Python/ecmwf/norm.daily.nao.index.b500101.current.ascii', unpack = 'true')
+      dnaolist = dnaoindex.tolist()
+      dnaolist6hour = []
+      [dnaolist6hour.extend([i]*4) for i in dnaolist]
+      iTimeStart = get_iTimeStart(fTracks, metricNames)
+      
+#################################################################
+
+###########For PNA filtering#####################################
+   if(PNA == True):
+      dyear,dmonth,dday,dpnaindex = np.loadtxt('/home/dylanl/Documents/Python/ecmwf/norm.daily.pna.index.b500101.current.ascii', unpack = 'true')
+      dpnalist = dpnaindex.tolist()
+      dpnalist6hour = []
+      [dpnalist6hour.extend([i]*4) for i in dpnalist]
+      iTimeStart = get_iTimeStart(fTracks, metricNames)
+      
+#################################################################
+   for month in np.arange(1,13,1):
+
+      den_arr = np.zeros([len(xlat),len(xlon)])
+
+      m = Basemap(projection='ortho',lon_0=0,lat_0=89.5, resolution='l')
+  
+      ax = plt.gca()
+      m.drawcoastlines()
+      print 'Start month '+str(month)+'now:'
+      fSave = my_settings.fDirSave+my_settings.info+'_'+str(month)+'_month_60%N65N_GENESIS.png'
+      aSave = my_settings.fDirSave+my_settings.info+'_'+str(month)+'_month_60%N65N_GENESIS_array.npy'
+      for iTrack,track in enumerate(trackList):
+         nTimes = track.shape[0]
+
+         #Filter by min timesteps
+         if (True):
+            if (nTimes<mintimesteps): 
+               continue
+         #Filter by definition of TPV
+         if (TPVdef == True):
+            north_65_count = 0
+            for track_val in xrange(0,nTimes):
+               if track[track_val,latInd] >= 65:
+                  north_65_count += 1
+               percent = float(north_65_count)/float(nTimes)
+            if percent < .6:
+               continue
+         if (latNorth == True):
+            if track[0,latInd] < 60:
+               continue
+#######Filter by Month###########################################
+         if (month == 1):
+            index = iTimeStart[iTrack]
+            if(seasonlist[int(index)] != 1):
+               continue
+
+         if (month == 2):
+            index = iTimeStart[iTrack]
+            if(seasonlist[int(index)] != 2):
+               continue
+
+         if (month == 3):
+            index = iTimeStart[iTrack]
+            if(seasonlist[int(index)] != 3):
+               continue
+
+         if (month == 4):
+            index = iTimeStart[iTrack]
+            if(seasonlist[int(index)] != 4):
+               continue
+
+         if (month == 5):
+            index = iTimeStart[iTrack]
+            if(seasonlist[int(index)] != 5):
+               continue
+
+         if (month == 6):
+            index = iTimeStart[iTrack]
+            if(seasonlist[int(index)] != 6):
+               continue
+
+         if (month == 7):
+            index = iTimeStart[iTrack]
+            if(seasonlist[int(index)] != 7):
+               continue
+
+         if (month == 8):
+            index = iTimeStart[iTrack]
+            if(seasonlist[int(index)] != 8):
+               continue
+
+         if (month == 9):
+            index = iTimeStart[iTrack]
+            if(seasonlist[int(index)] != 9):
+               continue
+
+         if (month == 10):
+            index = iTimeStart[iTrack]
+            if(seasonlist[int(index)] != 10):
+               continue
+
+         if (month == 11):
+            index = iTimeStart[iTrack]
+            if(seasonlist[int(index)] != 11):
+               continue
+               
+         if (month == 12):
+            index = iTimeStart[iTrack]
+            if(seasonlist[int(index)] != 12):
+               continue
+######Filter by AO##############################################
+         if (AO == True):
+            index = iTimeStart[iTrack]
+            #For positive AO use < 1, negative > -1
+            if(daolist6hour[int(index)] > -1):
+               continue
+#################################################################
+
+#######Filter by NAO#############################################
+         if (NAO == True):
+            index = iTimeStart[iTrack]
+            if(dnaolist6hour[int(index)] > -1):
+               continue
+
+########Filter by PNA############################################
+         if (PNA == True):
+            index = iTimeStart[iTrack]
+            if(dpnalist6hour[int(index)] < 1):
+               continue
+
+#######Filter for genesis########################################
+         if (genesis == True):
+            vortlat = track[0,latInd]
+            vortlon = track[0,lonInd]
+#################################################################
+
+######Filter for lysis###########################################
+         if (lysis == True):
+            vortlat = track[-1,latInd]
+            vortlon = track[-1,lonInd]
+
+######No lysis or genesis filter#################################
+         if (fulldata == True):
+            vortlat = track[:,latInd]
+            vortlon = track[:,lonInd]
+
+         for ii in xrange(0,len(xlat)):
+            for jj in xrange(0,len(xlon)):
+               vortices = 0
+               if (fulldata == True):
+                  for kk in xrange(0,len(vortlat)):
+                     # If using NETCDF, subtract 360 from any value greater than 180 in order to
+                     # use a longitude scale of -180-180 degrees (possibly not needed now due to radian conversion)
+                     if (False):
+                        if vortlon[kk] > 180:
+                           vortlon[kk] = vortlon[kk] - 360
+         
+                     distance = abs(my_settings.rEarth*helpers.distance_on_unit_sphere(vortlat[kk],vortlon[kk],xlat[ii],xlon[jj]))
+         
+                     if distance <= radius:
+	                    vortices = vortices + 1
+               else:
+                  distance = abs(my_settings.rEarth*helpers.distance_on_unit_sphere(vortlat,vortlon,xlat[ii],xlon[jj]))
+                  if distance <= radius:
+                     vortices = vortices + 1
+               den_arr[ii,jj] = den_arr[ii,jj] + vortices
+         print str(month)+' : '+str(iTrack)
+      np.save(aSave,den_arr)
+      m.contourf(xloni,xlati,den_arr,latlon=True)
+      m.colorbar()
+      plt.savefig(fSave); plt.close()
+
+def plot_month_year_density_map(fTracks,mintimesteps):
+
+   radius = 555000 #in meters
+
+######Filter options##############################################
+   genesis = False #filter for genesis
+   lysis = False #filter for lysis
+   fulldata = True #full data set
+   
+   AO = False #filter by AO (this setting is separate from above)
+   NAO = False #filter by NAO (this setting is separate from above)
+   PNA = False #filter by PNA (this setting is separate from above)
+
+   TPVdef = True #filter by definition of TPV
+   latNorth = False #filter by genesis above defined latitude
+##################################################################
+
+   metricNames = ['latExtr', 'lonExtr']
+   latInd = metricNames.index('latExtr')
+   lonInd = metricNames.index('lonExtr')
+
+   trackList, timeList = read_tracks_metrics(fTracks, metricNames)
+      
+##################################################################
+# Create new mesh for grids
+##################################################################
+
+   latboxsize = 2
+   lonboxsize = 5
+
+   xlat = np.arange(30,90,latboxsize)
+   xlon = np.arange(0,365,lonboxsize)
+
+   xloni,xlati = np.meshgrid(xlon,xlat)
+
+#################################################################
+# Create the tracks
+#################################################################
+
+############For Monthly Filtering################################
+   seasonlistin = pd.read_pickle('/home/dylanl/Documents/Python/ecmwf/monthlist.pkl')
+   seasonlistin = seasonlistin.tolist()
+   seasonlist = []
+   [seasonlist.extend([i]*4) for i in seasonlistin]
+   iTimeStart = get_iTimeStart(fTracks, metricNames)
+   
+############For Yearly Filtering#################################
+   yearlistin = pd.read_pickle('/home/dylanl/Documents/Python/ecmwf/yearlist.pkl')
+   yearlistin = yearlistin.tolist()
+   yearlist = []
+   [yearlist.extend([i]*4) for i in yearlistin]
+   iTimeStart = get_iTimeStart(fTracks, metricNames)
+
+############For AO filtering#####################################
+   if(AO == True):
+      dyear,dmonth,dday,daoindex = np.loadtxt('/home/dylanl/Documents/Python/ecmwf/norm.daily.ao.index.b500101.current.ascii', unpack = 'true')
+      daolist = daoindex.tolist()
+      daolist6hour = []
+      [daolist6hour.extend([i]*4) for i in daolist]
+      iTimeStart = get_iTimeStart(fTracks, metricNames)
+
+############For NAO filtering####################################
+   if(NAO == True):
+      dyear,dmonth,dday,dnaoindex = np.loadtxt('/home/dylanl/Documents/Python/ecmwf/norm.daily.nao.index.b500101.current.ascii', unpack = 'true')
+      dnaolist = dnaoindex.tolist()
+      dnaolist6hour = []
+      [dnaolist6hour.extend([i]*4) for i in dnaolist]
+      iTimeStart = get_iTimeStart(fTracks, metricNames)
+      
+#################################################################
+
+###########For PNA filtering#####################################
+   if(PNA == True):
+      dyear,dmonth,dday,dpnaindex = np.loadtxt('/home/dylanl/Documents/Python/ecmwf/norm.daily.pna.index.b500101.current.ascii', unpack = 'true')
+      dpnalist = dpnaindex.tolist()
+      dpnalist6hour = []
+      [dpnalist6hour.extend([i]*4) for i in dpnalist]
+      iTimeStart = get_iTimeStart(fTracks, metricNames)
+      
+#################################################################
+   for year in np.arange(1979,2011,1):
+      print 'Start year '+str(year)+' now:'
+      for month in np.arange(1,13,1):
+         den_arr = np.zeros([len(xlat),len(xlon)])
+         print 'Start month '+str(month)+' now:'
+         fSave = my_settings.fDirSave+my_settings.info+'_'+str(year)+'_'+str(month)+'_month_TPV_density.png'
+         aSave = my_settings.fDirSave+my_settings.info+'_'+str(year)+'_'+str(month)+'_month_TPV_density_array.npy'
+         m = Basemap(projection='ortho',lon_0=0,lat_0=89.5, resolution='l')
+         ax = plt.gca()
+         m.drawcoastlines()
+         for iTrack,track in enumerate(trackList):
+            nTimes = track.shape[0]
+
+            #Filter by min timesteps
+            if (True):
+               if (nTimes<mintimesteps): 
+                  continue
+            #Filter by definition of TPV
+            if (TPVdef == True):
+               north_65_count = 0
+               for track_val in xrange(0,nTimes):
+                  if track[track_val,latInd] >= 65:
+                     north_65_count += 1
+                  percent = float(north_65_count)/float(nTimes)
+               if percent < .6:
+                  continue
+            if (latNorth == True):
+               if track[0,latInd] < 60:
+                  continue
+                  
+#######Filter by Year############################################
+            if (year == 1979):
+               index = iTimeStart[iTrack]
+               if(yearlist[int(index)] != 1979):
+                  continue
+                  
+            if (year == 1980):
+               index = iTimeStart[iTrack]
+               if(yearlist[int(index)] != 1980):
+                  continue
+                  
+            if (year == 1981):
+               index = iTimeStart[iTrack]
+               if(yearlist[int(index)] != 1981):
+                  continue
+                  
+            if (year == 1982):
+               index = iTimeStart[iTrack]
+               if(yearlist[int(index)] != 1982):
+                  continue
+                  
+            if (year == 1983):
+               index = iTimeStart[iTrack]
+               if(yearlist[int(index)] != 1983):
+                  continue
+                  
+            if (year == 1984):
+               index = iTimeStart[iTrack]
+               if(yearlist[int(index)] != 1984):
+                  continue
+                  
+            if (year == 1985):
+               index = iTimeStart[iTrack]
+               if(yearlist[int(index)] != 1985):
+                  continue
+                  
+            if (year == 1986):
+               index = iTimeStart[iTrack]
+               if(yearlist[int(index)] != 1986):
+                  continue
+                  
+            if (year == 1987):
+               index = iTimeStart[iTrack]
+               if(yearlist[int(index)] != 1987):
+                  continue
+                  
+            if (year == 1988):
+               index = iTimeStart[iTrack]
+               if(yearlist[int(index)] != 1988):
+                  continue
+                  
+            if (year == 1989):
+               index = iTimeStart[iTrack]
+               if(yearlist[int(index)] != 1989):
+                  continue
+                  
+            if (year == 1990):
+               index = iTimeStart[iTrack]
+               if(yearlist[int(index)] != 1990):
+                  continue
+                  
+            if (year == 1991):
+               index = iTimeStart[iTrack]
+               if(yearlist[int(index)] != 1991):
+                  continue
+                  
+            if (year == 1992):
+               index = iTimeStart[iTrack]
+               if(yearlist[int(index)] != 1992):
+                  continue
+                  
+            if (year == 1993):
+               index = iTimeStart[iTrack]
+               if(yearlist[int(index)] != 1993):
+                  continue
+                  
+            if (year == 1994):
+               index = iTimeStart[iTrack]
+               if(yearlist[int(index)] != 1994):
+                  continue
+                  
+            if (year == 1995):
+               index = iTimeStart[iTrack]
+               if(yearlist[int(index)] != 1995):
+                  continue
+                  
+            if (year == 1996):
+               index = iTimeStart[iTrack]
+               if(yearlist[int(index)] != 1996):
+                  continue
+                  
+            if (year == 1997):
+               index = iTimeStart[iTrack]
+               if(yearlist[int(index)] != 1997):
+                  continue
+                  
+            if (year == 1998):
+               index = iTimeStart[iTrack]
+               if(yearlist[int(index)] != 1998):
+                  continue
+                  
+            if (year == 1999):
+               index = iTimeStart[iTrack]
+               if(yearlist[int(index)] != 1999):
+                  continue
+                  
+            if (year == 2000):
+               index = iTimeStart[iTrack]
+               if(yearlist[int(index)] != 2000):
+                  continue
+                  
+            if (year == 2001):
+               index = iTimeStart[iTrack]
+               if(yearlist[int(index)] != 2001):
+                  continue
+                  
+            if (year == 2002):
+               index = iTimeStart[iTrack]
+               if(yearlist[int(index)] != 2002):
+                  continue
+                  
+            if (year == 2003):
+               index = iTimeStart[iTrack]
+               if(yearlist[int(index)] != 2003):
+                  continue
+                  
+            if (year == 2004):
+               index = iTimeStart[iTrack]
+               if(yearlist[int(index)] != 2004):
+                  continue
+                  
+            if (year == 2005):
+               index = iTimeStart[iTrack]
+               if(yearlist[int(index)] != 2005):
+                  continue
+                  
+            if (year == 2006):
+               index = iTimeStart[iTrack]
+               if(yearlist[int(index)] != 2006):
+                  continue
+                  
+            if (year == 2007):
+               index = iTimeStart[iTrack]
+               if(yearlist[int(index)] != 2007):
+                  continue
+                  
+            if (year == 2008):
+               index = iTimeStart[iTrack]
+               if(yearlist[int(index)] != 2008):
+                  continue
+                  
+            if (year == 2009):
+               index = iTimeStart[iTrack]
+               if(yearlist[int(index)] != 2009):
+                  continue
+                  
+            if (year == 2010):
+               index = iTimeStart[iTrack]
+               if(yearlist[int(index)] != 2010):
+                  continue
+                  
+
+#######Filter by Month###########################################
+            if (month == 1):
+               index = iTimeStart[iTrack]
+               if(seasonlist[int(index)] != 1):
+                  continue
+
+            if (month == 2):
+               index = iTimeStart[iTrack]
+               if(seasonlist[int(index)] != 2):
+                  continue
+
+            if (month == 3):
+               index = iTimeStart[iTrack]
+               if(seasonlist[int(index)] != 3):
+                  continue
+
+            if (month == 4):
+               index = iTimeStart[iTrack]
+               if(seasonlist[int(index)] != 4):
+                  continue
+
+            if (month == 5):
+               index = iTimeStart[iTrack]
+               if(seasonlist[int(index)] != 5):
+                  continue
+
+            if (month == 6):
+               index = iTimeStart[iTrack]
+               if(seasonlist[int(index)] != 6):
+                  continue
+
+            if (month == 7):
+               index = iTimeStart[iTrack]
+               if(seasonlist[int(index)] != 7):
+                  continue
+
+            if (month == 8):
+               index = iTimeStart[iTrack]
+               if(seasonlist[int(index)] != 8):
+                  continue
+
+            if (month == 9):
+               index = iTimeStart[iTrack]
+               if(seasonlist[int(index)] != 9):
+                  continue
+
+            if (month == 10):
+               index = iTimeStart[iTrack]
+               if(seasonlist[int(index)] != 10):
+                  continue
+
+            if (month == 11):
+               index = iTimeStart[iTrack]
+               if(seasonlist[int(index)] != 11):
+                  continue
+               
+            if (month == 12):
+               index = iTimeStart[iTrack]
+               if(seasonlist[int(index)] != 12):
+                  continue
+######Filter by AO##############################################
+            if (AO == True):
+               index = iTimeStart[iTrack]
+               #For positive AO use < 1, negative > -1
+               if(daolist6hour[int(index)] > -1):
+                  continue
+#################################################################
+
+#######Filter by NAO#############################################
+            if (NAO == True):
+               index = iTimeStart[iTrack]
+               if(dnaolist6hour[int(index)] > -1):
+                  continue
+
+########Filter by PNA############################################
+            if (PNA == True):
+               index = iTimeStart[iTrack]
+               if(dpnalist6hour[int(index)] < 1):
+                  continue
+
+#######Filter for genesis########################################
+            if (genesis == True):
+               vortlat = track[0,latInd]
+               vortlon = track[0,lonInd]
+#################################################################
+
+######Filter for lysis###########################################
+            if (lysis == True):
+               vortlat = track[-1,latInd]
+               vortlon = track[-1,lonInd]
+
+######No lysis or genesis filter#################################
+            if (fulldata == True):
+               vortlat = track[:,latInd]
+               vortlon = track[:,lonInd]
+
+            for ii in xrange(0,len(xlat)):
+               for jj in xrange(0,len(xlon)):
+                  vortices = 0
+                  if (fulldata == True):
+                     for kk in xrange(0,len(vortlat)):
+                        # If using NETCDF, subtract 360 from any value greater than 180 in order to
+                        # use a longitude scale of -180-180 degrees (possibly not needed now due to radian conversion)
+                        if (False):
+                           if vortlon[kk] > 180:
+                              vortlon[kk] = vortlon[kk] - 360
+         
+                        distance = abs(my_settings.rEarth*helpers.distance_on_unit_sphere(vortlat[kk],vortlon[kk],xlat[ii],xlon[jj]))
+         
+                        if distance <= radius:
+	                       vortices = vortices + 1
+                  else:
+                     distance = abs(my_settings.rEarth*helpers.distance_on_unit_sphere(vortlat,vortlon,xlat[ii],xlon[jj]))
+                     if distance <= radius:
+                        vortices = vortices + 1
+                  den_arr[ii,jj] = den_arr[ii,jj] + vortices
+            print str(year)+'-'+str(month)+' : '+str(iTrack)
+         np.save(aSave,den_arr)
+         m.contourf(xloni,xlati,den_arr,latlon=True)
+         m.colorbar()
+         plt.savefig(fSave); plt.close()
+         
+def plot_year_density_map(fTracks,mintimesteps):
+
+   radius = 555000 #in meters
+
+######Filter options##############################################
+   genesis = False #filter for genesis
+   lysis = False #filter for lysis
+   fulldata = True #full data set
+   
+   AO = False #filter by AO (this setting is separate from above)
+   NAO = False #filter by NAO (this setting is separate from above)
+   PNA = False #filter by PNA (this setting is separate from above)
+
+   TPVdef = True #filter by definition of TPV
+   latNorth = False #filter by genesis above defined latitude
+##################################################################
+
+   metricNames = ['latExtr', 'lonExtr']
+   latInd = metricNames.index('latExtr')
+   lonInd = metricNames.index('lonExtr')
+
+   trackList, timeList = read_tracks_metrics(fTracks, metricNames)
+      
+##################################################################
+# Create new mesh for grids
+##################################################################
+
+   latboxsize = 2
+   lonboxsize = 5
+
+   xlat = np.arange(30,90,latboxsize)
+   xlon = np.arange(0,365,lonboxsize)
+
+   xloni,xlati = np.meshgrid(xlon,xlat)
+
+#################################################################
+# Create the tracks
+#################################################################
+   
+############For Yearly Filtering#################################
+   yearlistin = pd.read_pickle('/home/dylanl/Documents/Python/ecmwf/yearlist.pkl')
+   yearlistin = yearlistin.tolist()
+   yearlist = []
+   [yearlist.extend([i]*4) for i in yearlistin]
+   iTimeStart = get_iTimeStart(fTracks, metricNames)
+
+############For AO filtering#####################################
+   if(AO == True):
+      dyear,dmonth,dday,daoindex = np.loadtxt('/home/dylanl/Documents/Python/ecmwf/norm.daily.ao.index.b500101.current.ascii', unpack = 'true')
+      daolist = daoindex.tolist()
+      daolist6hour = []
+      [daolist6hour.extend([i]*4) for i in daolist]
+      iTimeStart = get_iTimeStart(fTracks, metricNames)
+
+############For NAO filtering####################################
+   if(NAO == True):
+      dyear,dmonth,dday,dnaoindex = np.loadtxt('/home/dylanl/Documents/Python/ecmwf/norm.daily.nao.index.b500101.current.ascii', unpack = 'true')
+      dnaolist = dnaoindex.tolist()
+      dnaolist6hour = []
+      [dnaolist6hour.extend([i]*4) for i in dnaolist]
+      iTimeStart = get_iTimeStart(fTracks, metricNames)
+      
+#################################################################
+
+###########For PNA filtering#####################################
+   if(PNA == True):
+      dyear,dmonth,dday,dpnaindex = np.loadtxt('/home/dylanl/Documents/Python/ecmwf/norm.daily.pna.index.b500101.current.ascii', unpack = 'true')
+      dpnalist = dpnaindex.tolist()
+      dpnalist6hour = []
+      [dpnalist6hour.extend([i]*4) for i in dpnalist]
+      iTimeStart = get_iTimeStart(fTracks, metricNames)
+      
+#################################################################
+   for year in np.arange(1979,2011,1):
+         print 'Start year '+str(year)+' now:'
+         den_arr = np.zeros([len(xlat),len(xlon)])
+         fSave = my_settings.fDirSave+my_settings.info+'_'+str(year)+'_TPV_density.png'
+         aSave = my_settings.fDirSave+my_settings.info+'_'+str(year)+'_TPV_density_array.npy'
+         m = Basemap(projection='ortho',lon_0=0,lat_0=89.5, resolution='l')
+         ax = plt.gca()
+         m.drawcoastlines()
+         for iTrack,track in enumerate(trackList):
+            nTimes = track.shape[0]
+
+            #Filter by min timesteps
+            if (True):
+               if (nTimes<mintimesteps): 
+                  continue
+            #Filter by definition of TPV
+            if (TPVdef == True):
+               north_65_count = 0
+               for track_val in xrange(0,nTimes):
+                  if track[track_val,latInd] >= 65:
+                     north_65_count += 1
+                  percent = float(north_65_count)/float(nTimes)
+               if percent < .6:
+                  continue
+            if (latNorth == True):
+               if track[0,latInd] < 60:
+                  continue
+                  
+#######Filter by Year############################################
+            if (year == 1979):
+               index = iTimeStart[iTrack]
+               if(yearlist[int(index)] != 1979):
+                  continue
+                  
+            if (year == 1980):
+               index = iTimeStart[iTrack]
+               if(yearlist[int(index)] != 1980):
+                  continue
+                  
+            if (year == 1981):
+               index = iTimeStart[iTrack]
+               if(yearlist[int(index)] != 1981):
+                  continue
+                  
+            if (year == 1982):
+               index = iTimeStart[iTrack]
+               if(yearlist[int(index)] != 1982):
+                  continue
+                  
+            if (year == 1983):
+               index = iTimeStart[iTrack]
+               if(yearlist[int(index)] != 1983):
+                  continue
+                  
+            if (year == 1984):
+               index = iTimeStart[iTrack]
+               if(yearlist[int(index)] != 1984):
+                  continue
+                  
+            if (year == 1985):
+               index = iTimeStart[iTrack]
+               if(yearlist[int(index)] != 1985):
+                  continue
+                  
+            if (year == 1986):
+               index = iTimeStart[iTrack]
+               if(yearlist[int(index)] != 1986):
+                  continue
+                  
+            if (year == 1987):
+               index = iTimeStart[iTrack]
+               if(yearlist[int(index)] != 1987):
+                  continue
+                  
+            if (year == 1988):
+               index = iTimeStart[iTrack]
+               if(yearlist[int(index)] != 1988):
+                  continue
+                  
+            if (year == 1989):
+               index = iTimeStart[iTrack]
+               if(yearlist[int(index)] != 1989):
+                  continue
+                  
+            if (year == 1990):
+               index = iTimeStart[iTrack]
+               if(yearlist[int(index)] != 1990):
+                  continue
+                  
+            if (year == 1991):
+               index = iTimeStart[iTrack]
+               if(yearlist[int(index)] != 1991):
+                  continue
+                  
+            if (year == 1992):
+               index = iTimeStart[iTrack]
+               if(yearlist[int(index)] != 1992):
+                  continue
+                  
+            if (year == 1993):
+               index = iTimeStart[iTrack]
+               if(yearlist[int(index)] != 1993):
+                  continue
+                  
+            if (year == 1994):
+               index = iTimeStart[iTrack]
+               if(yearlist[int(index)] != 1994):
+                  continue
+                  
+            if (year == 1995):
+               index = iTimeStart[iTrack]
+               if(yearlist[int(index)] != 1995):
+                  continue
+                  
+            if (year == 1996):
+               index = iTimeStart[iTrack]
+               if(yearlist[int(index)] != 1996):
+                  continue
+                  
+            if (year == 1997):
+               index = iTimeStart[iTrack]
+               if(yearlist[int(index)] != 1997):
+                  continue
+                  
+            if (year == 1998):
+               index = iTimeStart[iTrack]
+               if(yearlist[int(index)] != 1998):
+                  continue
+                  
+            if (year == 1999):
+               index = iTimeStart[iTrack]
+               if(yearlist[int(index)] != 1999):
+                  continue
+                  
+            if (year == 2000):
+               index = iTimeStart[iTrack]
+               if(yearlist[int(index)] != 2000):
+                  continue
+                  
+            if (year == 2001):
+               index = iTimeStart[iTrack]
+               if(yearlist[int(index)] != 2001):
+                  continue
+                  
+            if (year == 2002):
+               index = iTimeStart[iTrack]
+               if(yearlist[int(index)] != 2002):
+                  continue
+                  
+            if (year == 2003):
+               index = iTimeStart[iTrack]
+               if(yearlist[int(index)] != 2003):
+                  continue
+                  
+            if (year == 2004):
+               index = iTimeStart[iTrack]
+               if(yearlist[int(index)] != 2004):
+                  continue
+                  
+            if (year == 2005):
+               index = iTimeStart[iTrack]
+               if(yearlist[int(index)] != 2005):
+                  continue
+                  
+            if (year == 2006):
+               index = iTimeStart[iTrack]
+               if(yearlist[int(index)] != 2006):
+                  continue
+                  
+            if (year == 2007):
+               index = iTimeStart[iTrack]
+               if(yearlist[int(index)] != 2007):
+                  continue
+                  
+            if (year == 2008):
+               index = iTimeStart[iTrack]
+               if(yearlist[int(index)] != 2008):
+                  continue
+                  
+            if (year == 2009):
+               index = iTimeStart[iTrack]
+               if(yearlist[int(index)] != 2009):
+                  continue
+                  
+            if (year == 2010):
+               index = iTimeStart[iTrack]
+               if(yearlist[int(index)] != 2010):
+                  continue
+                  
+
+
+######Filter by AO##############################################
+            if (AO == True):
+               index = iTimeStart[iTrack]
+               #For positive AO use < 1, negative > -1
+               if(daolist6hour[int(index)] > -1):
+                  continue
+#################################################################
+
+#######Filter by NAO#############################################
+            if (NAO == True):
+               index = iTimeStart[iTrack]
+               if(dnaolist6hour[int(index)] > -1):
+                  continue
+
+########Filter by PNA############################################
+            if (PNA == True):
+               index = iTimeStart[iTrack]
+               if(dpnalist6hour[int(index)] < 1):
+                  continue
+
+#######Filter for genesis########################################
+            if (genesis == True):
+               vortlat = track[0,latInd]
+               vortlon = track[0,lonInd]
+#################################################################
+
+######Filter for lysis###########################################
+            if (lysis == True):
+               vortlat = track[-1,latInd]
+               vortlon = track[-1,lonInd]
+
+######No lysis or genesis filter#################################
+            if (fulldata == True):
+               vortlat = track[:,latInd]
+               vortlon = track[:,lonInd]
+
+            for ii in xrange(0,len(xlat)):
+               for jj in xrange(0,len(xlon)):
+                  vortices = 0
+                  if (fulldata == True):
+                     for kk in xrange(0,len(vortlat)):
+                        # If using NETCDF, subtract 360 from any value greater than 180 in order to
+                        # use a longitude scale of -180-180 degrees (possibly not needed now due to radian conversion)
+                        if (False):
+                           if vortlon[kk] > 180:
+                              vortlon[kk] = vortlon[kk] - 360
+         
+                        distance = abs(my_settings.rEarth*helpers.distance_on_unit_sphere(vortlat[kk],vortlon[kk],xlat[ii],xlon[jj]))
+         
+                        if distance <= radius:
+	                       vortices = vortices + 1
+                  else:
+                     distance = abs(my_settings.rEarth*helpers.distance_on_unit_sphere(vortlat,vortlon,xlat[ii],xlon[jj]))
+                     if distance <= radius:
+                        vortices = vortices + 1
+                  den_arr[ii,jj] = den_arr[ii,jj] + vortices
+            print str(year)+' : '+str(iTrack)
+         np.save(aSave,den_arr)
+         m.contourf(xloni,xlati,den_arr,latlon=True)
+         m.colorbar()
+         plt.savefig(fSave); plt.close()
     
 def combineParallelFiles_old(fOut, filesIn, 
                           keys1d = ['iTimeStart','lenTrack'], 

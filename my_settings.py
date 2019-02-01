@@ -33,7 +33,7 @@ areaOverlap = .01 #fraction of tpv area overlap for candidate correspondence
 
 latThresh = 30.*np.pi/180. #segment N of this latitude (in radians)
 trackMinMaxBoth = 0 #0-min, 1-max (2-both shouldn't be used w/o further development)
-info = '30N_eraI_1979-2010'
+info = '30N_eraI_75deg_1979-2015_'
 mintimesteps = 8; #minimum number of timesteps to use in tracking
 
 #Possible input types: 'eraI' and 'wrf_trop' thus far
@@ -46,7 +46,7 @@ if (inputType == 'eraI'):
     #Data location and names to pull
     fDirData = '/data01/Research/ERAInt/'
     #filesData = sorted(glob.glob(fDirData+'ecmwf_*.nc'), key=os.path.getmtime)
-    dates = range(1979,2011)
+    dates = range(1979,2016)
     months = ['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec']
     filesData = []
     for x in xrange(len(dates)):
@@ -83,27 +83,28 @@ if (True): #a quick check of specified times
     sys.exit()
 
 
-fDirSave = '/data01/Research/ERAInt/tracks/PNA/'
+fDirSave = '/data02/Research/ERAInt/tracks/full_75_tracks/'
 if not os.path.exists(fDirSave):
     os.makedirs(fDirSave)
 
 fMesh = filesData[0]  
-fMetr = fDirSave+'fields.nc'
+fMetr = fDirSave+info+'fields.nc'
 fSegFmt = fDirSave+'seg_{0}.nc'
 fSeg = fSegFmt.format(myRank)
-fSegFinal = fDirSave+'seg.nc'; fSeg = fSegFinal #for after running seg in parallel...
-fCorr = fDirSave+'correspond_horizPlusVert.nc'
+fSegFinal = fDirSave+info+'seg.nc'; #fSeg = fSegFinal #for after running seg in parallel...
+fCorr = fDirSave+info+'correspond_horizPlusVert.nc'
 fTrackFmt = fDirSave+'tracks_{0}.nc'
 fTrack = fTrackFmt.format(myRank)
-fTrackFinal = fDirSave+'tracks_low.nc'
-fMetrics = fDirSave+'metrics.nc'
+fTrackFinal = fDirSave+info+'tracks_low.nc'
+fMetrics = fDirSave+info+'metrics.nc'
 
 
-#possible input types: eraI, wrf_trop
+#First set to True for doPreProc. Then set to False and rest True. Then run as:
+# mpiexec -n 4 python driver.py
 doPreProc = False
-doSeg = True
-doMetrics = True
-doCorr = True
+doSeg = False
+doMetrics = False
+doCorr = False
 doTracks = True
 
 def silentremove(filename):

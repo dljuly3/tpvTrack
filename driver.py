@@ -180,8 +180,23 @@ def demo_plotTracks():
   tracks.plot_tracks_metrics(fTrack, 'test_tracks.png')
 
 def demo_plotDensity():
-  fTrack = my_settings.fTrack
-  tracks.plot_density_map(fTrack, my_settings.fDirSave+'30N_eraI_1979-2010_2day_genesis_posPNAdensity.png', my_settings.fDirSave+'30N_eraI_1979-2010_2day_genesis_posPNAdensity_array.npy', my_settings.mintimesteps) 
+  fTrack = my_settings.fTrackFinal
+  tracks.plot_density_map(fTrack, my_settings.fDirSave+'30N_eraI_1979-2015_2day_60%N65N_Winter_GENESIS_1x3.png', my_settings.fDirSave+'30N_eraI_1979-2015_2day_60%N65N_Winter_GENESIS_1x3_array.npy', my_settings.mintimesteps) 
+    # final number above will determine min number of time steps required to keep for density.
+
+def demo_plotMonthDensity():
+  fTrack = my_settings.fTrackFinal
+  tracks.plot_monthly_density_map(fTrack, my_settings.mintimesteps) 
+    # final number above will determine min number of time steps required to keep for density.
+    
+def demo_plotMonthYearDensity():
+  fTrack = my_settings.fTrackFinal
+  tracks.plot_month_year_density_map(fTrack, my_settings.mintimesteps) 
+    # final number above will determine min number of time steps required to keep for density.
+    
+def demo_plotYearDensity():
+  fTrack = my_settings.fTrackFinal
+  tracks.plot_year_density_map(fTrack, my_settings.mintimesteps) 
     # final number above will determine min number of time steps required to keep for density.
 
 def demo_algo_plots():
@@ -272,11 +287,14 @@ def debug_helper():
   print mesh.isIndsInRegion(cells)
 
 if __name__=='__main__':
-  demo()
+  #demo()
   #demo_testMods()
   #debug_helper()
   #demo_algo_plots()
-  #demo_plotDensity()
+  demo_plotDensity()
+  #demo_plotMonthDensity()
+  #demo_plotMonthYearDensity()
+  #demo_plotYearDensity()
   #tracks.plot_tracks_metrics(my_settings.fTrack, my_settings.fDirSave+'test_tracks.png')
   #tracks.demo_plotMetrics('/data02/cases/test_segment/testUnified/summer2006/tracks_debug.txt')
   #tracks.demo_plotLifetimes('/data02/cases/test_segment/testUnified/summer2006/tracks_debug.txt')
